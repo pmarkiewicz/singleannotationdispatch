@@ -19,6 +19,7 @@ def singledispatchann(func):
     registry = {}
     dispatch_cache = WeakKeyDictionary()
     cache_token = None
+    disp_param = 1 if list(inspect.signature(func).parameters.keys())[0] == 'self' else 0
 
     def dispatch(cls):
         """generic_func.dispatch(cls) -> <function implementation>
@@ -56,7 +57,7 @@ def singledispatchann(func):
         if cls is None:
             sign = inspect.signature(func)
             params = sign.parameters
-            cls = next(iter(params.values())).annotation
+            cls = list(params.values())[disp_param].annotation
 
         registry[cls] = func
         if cache_token is None and hasattr(cls, '__abstractmethods__'):
@@ -65,7 +66,7 @@ def singledispatchann(func):
         return func
 
     def wrapper(*args, **kw):
-        return dispatch(args[0].__class__)(*args, **kw)
+        return dispatch(args[disp_param].__class__)(*args, **kw)
 
     registry[object] = func
     wrapper.register = register
